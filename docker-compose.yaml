@@ -1,7 +1,7 @@
 name: firecrawl
 
 x-common-service: &common-service
-  build: apps/api
+  image: ${APP_REGISTRY}/api:${IMAGE_TAG:-latest}
   networks:
     - backend
   extra_hosts:

@@ -22,7 +22,6 @@ build-api:
   only:
     - main
 
-
 build-playwright:
   stage: build
   image: docker:latest
@@ -33,18 +32,5 @@ build-playwright:
   script:
     - docker build -t $DOCKER_IMAGE_PLAYWRIGHT:latest ./apps/playwright-service
     - docker push $DOCKER_IMAGE_PLAYWRIGHT:latest
-  only:
-    - main
-
-build-worker:
-  stage: build
-  image: docker:latest
-  services:
-    - docker:dind
-  before_script:
-    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
-  script:
-    - docker build -t $DOCKER_IMAGE_WORKER:latest ./apps/api
-    - docker push $DOCKER_IMAGE_WORKER:latest
   only:
     - main
