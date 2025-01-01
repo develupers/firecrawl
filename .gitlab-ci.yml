@@ -10,21 +10,14 @@ variables:
   DOCKER_IMAGE_WORKER: ${CI_REGISTRY_IMAGE}/firecrawl-worker
   DOCKER_IMAGE_TAG: $CI_COMMIT_SHORT_SHA # Append commit hash as tag
 
-# Job 1: Authenticate Docker CLI with GitLab Container Registry
-docker-login:
-  stage: build
-  image: docker:latest
-  services:
-    - docker:dind
-  script:
-    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
-
 # Job 2: Build Images
 build-images:
   stage: build
   image: docker:latest
   services:
     - docker:dind
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
   script:
     # Build and tag the API service image
     - docker build -t $DOCKER_IMAGE_API:$DOCKER_IMAGE_TAG ./apps/api
@@ -49,7 +42,6 @@ push-images:
     # Push the Worker service image to the registry
     - docker push $DOCKER_IMAGE_WORKER:$DOCKER_IMAGE_TAG
   needs:
-    - docker-login
-    - build-images
+    - build-images # Explicitly require build-images to finish
   only:
     - main
