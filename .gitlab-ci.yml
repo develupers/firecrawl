@@ -8,10 +8,8 @@ variables:
   DOCKER_IMAGE_API: ${CI_REGISTRY_IMAGE}/firecrawl-api
   DOCKER_IMAGE_PLAYWRIGHT: ${CI_REGISTRY_IMAGE}/firecrawl-playwright
   DOCKER_IMAGE_WORKER: ${CI_REGISTRY_IMAGE}/firecrawl-worker
-  DOCKER_IMAGE_TAG: $CI_COMMIT_SHORT_SHA # Append commit hash as tag
 
-# Job 2: Build Images
-build-images:
+build-api:
   stage: build
   image: docker:latest
   services:
@@ -19,29 +17,34 @@ build-images:
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
   script:
-    # Build and tag the API service image
-    - docker build -t $DOCKER_IMAGE_API:$DOCKER_IMAGE_TAG ./apps/api
-    # Build and tag the Playwright service image
-    - docker build -t $DOCKER_IMAGE_PLAYWRIGHT:$DOCKER_IMAGE_TAG ./apps/playwright-service
-    # Build and tag the Worker service image
-    - docker build -t $DOCKER_IMAGE_WORKER:$DOCKER_IMAGE_TAG ./apps/api  # "api" here if worker uses the same context
+    - docker build -t $DOCKER_IMAGE_API:latest ./apps/api
+    - docker push $DOCKER_IMAGE_API:latest
   only:
-    - main # Build only on pushes to the main branch, adjust this as needed
+    - main
 
-# Job 3: Push Images to GitLab Container Registry
-push-images:
-  stage: push
+
+build-playwright:
+  stage: build
   image: docker:latest
   services:
     - docker:dind
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
   script:
-    # Push the API image to the registry
-    - docker push $DOCKER_IMAGE_API:$DOCKER_IMAGE_TAG
-    # Push the Playwright service image to the registry
-    - docker push $DOCKER_IMAGE_PLAYWRIGHT:$DOCKER_IMAGE_TAG
-    # Push the Worker service image to the registry
-    - docker push $DOCKER_IMAGE_WORKER:$DOCKER_IMAGE_TAG
-  needs:
-    - build-images # Explicitly require build-images to finish
+    - docker build -t $DOCKER_IMAGE_PLAYWRIGHT:latest ./apps/playwright-service
+    - docker push $DOCKER_IMAGE_PLAYWRIGHT:latest
+  only:
+    - main
+
+build-worker:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+  script:
+    - docker build -t $DOCKER_IMAGE_WORKER:latest ./apps/api
+    - docker push $DOCKER_IMAGE_WORKER:latest
   only:
     - main
