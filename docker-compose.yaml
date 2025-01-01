@@ -8,8 +8,8 @@ x-common-service: &common-service
     - "host.docker.internal:host-gateway"
 
 services:
-  playwright-service:
-    build: apps/playwright-service
+  playwright:
+    image: ${APP_REGISTRY}/playwright:${IMAGE_TAG:-latest}
     environment:
       - PORT=3000
       - PROXY_SERVER=${PROXY_SERVER}
@@ -24,7 +24,7 @@ services:
     environment:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       REDIS_RATE_LIMIT_URL: ${REDIS_URL:-redis://redis:6379}
-      PLAYWRIGHT_MICROSERVICE_URL: ${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright-service:3000}
+      PLAYWRIGHT_MICROSERVICE_URL: ${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright:3000}
       USE_DB_AUTHENTICATION: ${USE_DB_AUTHENTICATION}
       PORT: ${PORT:-3002}
       NUM_WORKERS_PER_QUEUE: ${NUM_WORKERS_PER_QUEUE}
@@ -48,7 +48,7 @@ services:
       FLY_PROCESS_GROUP: app
     depends_on:
       - redis
-      - playwright-service
+      - playwright
     ports:
       - "3002:3002"
     command: [ "pnpm", "run", "start:production" ]
@@ -58,7 +58,7 @@ services:
     environment:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       REDIS_RATE_LIMIT_URL: ${REDIS_URL:-redis://redis:6379}
-      PLAYWRIGHT_MICROSERVICE_URL: ${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright-service:3000}
+      PLAYWRIGHT_MICROSERVICE_URL: ${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright:3000}
       USE_DB_AUTHENTICATION: ${USE_DB_AUTHENTICATION}
       PORT: ${PORT:-3002}
       NUM_WORKERS_PER_QUEUE: ${NUM_WORKERS_PER_QUEUE}
@@ -82,7 +82,7 @@ services:
       FLY_PROCESS_GROUP: worker
     depends_on:
       - redis
-      - playwright-service
+      - playwright
       - api
     command: [ "pnpm", "run", "workers" ]
 

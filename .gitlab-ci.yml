@@ -5,9 +5,9 @@ stages:
 
 # Variables for Docker image names and tags
 variables:
-  DOCKER_IMAGE_API: ${CI_REGISTRY_IMAGE}/firecrawl-api
-  DOCKER_IMAGE_PLAYWRIGHT: ${CI_REGISTRY_IMAGE}/firecrawl-playwright
-  DOCKER_IMAGE_WORKER: ${CI_REGISTRY_IMAGE}/firecrawl-worker
+  DOCKER_IMAGE_API: ${CI_REGISTRY_IMAGE}/api
+  DOCKER_IMAGE_PLAYWRIGHT: ${CI_REGISTRY_IMAGE}/playwright
+  DOCKER_IMAGE_WORKER: ${CI_REGISTRY_IMAGE}/worker
 
 build-api:
   stage: build
