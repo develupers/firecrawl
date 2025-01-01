@@ -1,0 +1,55 @@
+# Define stages in the CI/CD pipeline
+stages:
+  - build
+  - push
+
+# Variables for Docker image names and tags
+variables:
+  DOCKER_IMAGE_API: ${CI_REGISTRY_IMAGE}/firecrawl-api
+  DOCKER_IMAGE_PLAYWRIGHT: ${CI_REGISTRY_IMAGE}/firecrawl-playwright
+  DOCKER_IMAGE_WORKER: ${CI_REGISTRY_IMAGE}/firecrawl-worker
+  DOCKER_IMAGE_TAG: $CI_COMMIT_SHORT_SHA # Append commit hash as tag
+
+# Job 1: Authenticate Docker CLI with GitLab Container Registry
+docker-login:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+
+# Job 2: Build Images
+build-images:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    # Build and tag the API service image
+    - docker build -t $DOCKER_IMAGE_API:$DOCKER_IMAGE_TAG ./apps/api
+    # Build and tag the Playwright service image
+    - docker build -t $DOCKER_IMAGE_PLAYWRIGHT:$DOCKER_IMAGE_TAG ./apps/playwright-service
+    # Build and tag the Worker service image
+    - docker build -t $DOCKER_IMAGE_WORKER:$DOCKER_IMAGE_TAG ./apps/api  # "api" here if worker uses the same context
+  only:
+    - main # Build only on pushes to the main branch, adjust this as needed
+
+# Job 3: Push Images to GitLab Container Registry
+push-images:
+  stage: push
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    # Push the API image to the registry
+    - docker push $DOCKER_IMAGE_API:$DOCKER_IMAGE_TAG
+    # Push the Playwright service image to the registry
+    - docker push $DOCKER_IMAGE_PLAYWRIGHT:$DOCKER_IMAGE_TAG
+    # Push the Worker service image to the registry
+    - docker push $DOCKER_IMAGE_WORKER:$DOCKER_IMAGE_TAG
+  needs:
+    - docker-login
+    - build-images
+  only:
+    - main
