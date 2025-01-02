@@ -2,8 +2,6 @@ version: "3.8"
 
 x-common-service: &common-service
   image: ${APP_REGISTRY}/api:${IMAGE_TAG:-latest}
-  networks:
-    - backend
   extra_hosts:
     - "host.docker.internal:host-gateway"
 
@@ -54,6 +52,7 @@ services:
       - redis
       - playwright
     networks:
+      - backend
       - proxy
     deploy:
       replicas: 1       # Two API replicas for load balancing
@@ -92,6 +91,8 @@ services:
       - redis
       - playwright
       - api
+    networks:
+      - backend
     deploy:
       replicas: 1
       restart_policy:
