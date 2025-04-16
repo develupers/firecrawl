@@ -1,0 +1,36 @@
+# Define stages in the CI/CD pipeline
+stages:
+  - build
+  - push
+
+# Variables for Docker image names and tags
+variables:
+  DOCKER_IMAGE_API: ${CI_REGISTRY_IMAGE}/api
+  DOCKER_IMAGE_PLAYWRIGHT: ${CI_REGISTRY_IMAGE}/playwright
+  DOCKER_IMAGE_WORKER: ${CI_REGISTRY_IMAGE}/worker
+
+build-api:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+  script:
+    - docker build -t $DOCKER_IMAGE_API:latest ./apps/api
+    - docker push $DOCKER_IMAGE_API:latest
+  only:
+    - main
+
+build-playwright:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+  script:
+    - docker build -t $DOCKER_IMAGE_PLAYWRIGHT:latest ./apps/playwright-service
+    - docker push $DOCKER_IMAGE_PLAYWRIGHT:latest
+  only:
+    - main

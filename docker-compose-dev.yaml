@@ -1,0 +1,115 @@
+version: "3.8"
+
+x-common-service: &common-service
+  image: ${APP_REGISTRY}/api:${IMAGE_TAG:-latest}
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+services:
+  playwright:
+    image: ${APP_REGISTRY}/playwright:${IMAGE_TAG:-latest}
+    environment:
+      - PORT=3000
+      - PROXY_SERVER=${PROXY_SERVER}
+      - PROXY_USERNAME=${PROXY_USERNAME}
+      - PROXY_PASSWORD=${PROXY_PASSWORD}
+      - BLOCK_MEDIA=${BLOCK_MEDIA}
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - backend
+
+  api:
+    <<: *common-service
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      REDIS_RATE_LIMIT_URL: ${REDIS_URL:-redis://redis:6379}
+      PLAYWRIGHT_MICROSERVICE_URL: ${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright:3000}
+      USE_DB_AUTHENTICATION: ${USE_DB_AUTHENTICATION}
+      PORT: ${PORT:-3002}
+      NUM_WORKERS_PER_QUEUE: ${NUM_WORKERS_PER_QUEUE}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
+      MODEL_NAME: ${MODEL_NAME:-gpt-4o}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+      LLAMAPARSE_API_KEY: ${LLAMAPARSE_API_KEY}
+      LOGTAIL_KEY: ${LOGTAIL_KEY}
+      BULL_AUTH_KEY: ${BULL_AUTH_KEY}
+      TEST_API_KEY: ${TEST_API_KEY}
+      POSTHOG_API_KEY: ${POSTHOG_API_KEY}
+      POSTHOG_HOST: ${POSTHOG_HOST}
+      SUPABASE_ANON_TOKEN: ${SUPABASE_ANON_TOKEN}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_TOKEN: ${SUPABASE_SERVICE_TOKEN}
+      SCRAPING_BEE_API_KEY: ${SCRAPING_BEE_API_KEY}
+      HOST: ${HOST:-0.0.0.0}
+      SELF_HOSTED_WEBHOOK_URL: ${SELF_HOSTED_WEBHOOK_URL}
+      LOGGING_LEVEL: ${LOGGING_LEVEL}
+      FLY_PROCESS_GROUP: app
+    depends_on:
+      - redis
+      - playwright
+    networks:
+      - backend
+      - proxy
+    deploy:
+      replicas: 1       # Two API replicas for load balancing
+      restart_policy:
+        condition: any
+    command: [ "pnpm", "run", "start:production" ]
+
+  worker:
+    <<: *common-service
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      REDIS_RATE_LIMIT_URL: ${REDIS_URL:-redis://redis:6379}
+      PLAYWRIGHT_MICROSERVICE_URL: ${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright:3000}
+      USE_DB_AUTHENTICATION: ${USE_DB_AUTHENTICATION}
+      PORT: ${PORT:-3002}
+      NUM_WORKERS_PER_QUEUE: ${NUM_WORKERS_PER_QUEUE}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
+      MODEL_NAME: ${MODEL_NAME:-gpt-4o}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+      LLAMAPARSE_API_KEY: ${LLAMAPARSE_API_KEY}
+      LOGTAIL_KEY: ${LOGTAIL_KEY}
+      BULL_AUTH_KEY: ${BULL_AUTH_KEY}
+      TEST_API_KEY: ${TEST_API_KEY}
+      POSTHOG_API_KEY: ${POSTHOG_API_KEY}
+      POSTHOG_HOST: ${POSTHOG_HOST}
+      SUPABASE_ANON_TOKEN: ${SUPABASE_ANON_TOKEN}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_TOKEN: ${SUPABASE_SERVICE_TOKEN}
+      SCRAPING_BEE_API_KEY: ${SCRAPING_BEE_API_KEY}
+      HOST: ${HOST:-0.0.0.0}
+      SELF_HOSTED_WEBHOOK_URL: ${SELF_HOSTED_WEBHOOK_URL}
+      LOGGING_LEVEL: ${LOGGING_LEVEL}
+      FLY_PROCESS_GROUP: worker
+    depends_on:
+      - redis
+      - playwright
+      - api
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    command: [ "pnpm", "run", "workers" ]
+
+  redis:
+    image: redis:alpine
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+    command: redis-server --bind 0.0.0.0
+
+networks:
+  backend:
+    driver: overlay
+  proxy:
+    external: true
+    name: firecrawl_proxy
