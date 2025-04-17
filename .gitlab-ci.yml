@@ -30,7 +30,7 @@ build-playwright:
   before_script:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
   script:
-    - docker build -t $DOCKER_IMAGE_PLAYWRIGHT:latest ./apps/playwright-service
+    - docker build -t $DOCKER_IMAGE_PLAYWRIGHT:latest ./apps/playwright-service-ts
     - docker push $DOCKER_IMAGE_PLAYWRIGHT:latest
   only:
     - main
